@@ -1,17 +1,20 @@
-// main.go
 package main
 
 import (
     "bufio"
     "bytes"
     "errors"
+    "flag"
     "fmt"
     "io/ioutil"
     "os"
+    "path/filepath"
+    "regexp"
     "strings"
 
     "github.com/andygrunwald/go-jira"
     "github.com/russross/blackfriday/v2"
+    "gopkg.in/yaml.v2"
 )
 
 // IssueType represents the type of a Jira issue.
@@ -30,6 +33,13 @@ type Issue struct {
     Children []*Issue
     Labels   []string
     Fields   map[string]string
+}
+
+// Config represents the configuration structure.
+type Config struct {
+    Endpoint string `yaml:"endpoint"`
+    User     string `yaml:"user"`
+    Token    string `yaml:"token"`
 }
 
 // isJiraTicket checks if a given string is a valid Jira ticket ID.
@@ -178,28 +188,78 @@ func createIssues(client *jira.Client, issue *Issue, fields map[string]string) e
     return nil
 }
 
+// loadConfig loads the configuration from the YAML config file.
+func loadConfig(path string) (*Config, error) {
+    content, err := ioutil.ReadFile(path)
+    if err != nil {
+        return nil, err
+    }
+
+    var config Config
+    err = yaml.Unmarshal(content, &config)
+    if err != nil {
+        return nil, err
+    }
+
+    return &config, nil
+}
+
 func main() {
-    if len(os.Args) < 2 {
-        fmt.Println("Usage: jira-cli <markdown-file> [--field=field_name=value ...]")
+    var configPath string
+    var jiraURL string
+
+    flag.StringVar(&configPath, "config", filepath.Join(os.Getenv("HOME"), ".jira.d", "config.yml"), "Path to the configuration file")
+    flag.StringVar(&jiraURL, "url", "", "Jira URL (overrides config file)")
+    flag.Parse()
+
+    if len(flag.Args()) < 1 {
+        fmt.Println("Usage: jira-cli [--config=config.yml] [--url=jira-url] <markdown-file> [--field=field_name=value ...]")
         os.Exit(1)
     }
 
-    filepath := os.Args[1]
-    fields, err := getFields(os.Args[2:])
+    filepath := flag.Args()[0]
+    fields, err := getFields(flag.Args()[1:])
     if err != nil {
         fmt.Printf("Error parsing fields: %v\n", err)
+        os.Exit(1)
+    }
+
+    config, err := loadConfig(configPath)
+    if err != nil {
+        fmt.Printf("Error loading config: %v\n", err)
+        os.Exit(1)
+    }
+
+    if jiraURL == "" {
+        jiraURL = config.Endpoint
+    }
+
+    if jiraURL == "" {
+        fmt.Println("Jira URL must be provided either through the config file or the --url flag")
+        os.Exit(1)
+    }
+
+    jiraEmail := config.User
+    jiraAPIToken := config.Token
+    if jiraEmail == "" || jiraAPIToken == "" {
+        fmt.Println("Jira email and API token must be provided in the config file")
+        os.Exit(1)
+    }
+
+    tp := jira.BasicAuthTransport{
+        Username: jiraEmail,
+        APIToken: jiraAPIToken,
+    }
+
+    jiraClient, err := jira.NewClient(tp.Client(), jiraURL)
+    if err != nil {
+        fmt.Printf("Error creating Jira client: %v\n", err)
         os.Exit(1)
     }
 
     issue, err := parseFile(filepath)
     if err != nil {
         fmt.Printf("Error parsing file: %v\n", err)
-        os.Exit(1)
-    }
-
-    jiraClient, err := jira.NewClient(nil, "https://your-jira-instance.com")
-    if err != nil {
-        fmt.Printf("Error creating Jira client: %v\n", err)
         os.Exit(1)
     }
 
