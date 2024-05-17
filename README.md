@@ -1,6 +1,81 @@
 # md2jira
 A simple go script to convert a markdown file into a hierarchical set of jira tickets
 
+You're right; my apologies for that oversight. Let me fix that for you:
+
+## Build
+
+To build the project, make sure you have Go installed on your system. Then, navigate to the project directory and run:
+
+```
+go build
+```
+
+This will generate an executable file named `md2jira` in the current directory.
+
+## Test
+
+To run unit tests, use the following command:
+
+```
+go test
+```
+
+This will execute all test cases defined in the project.
+
+## Configuration
+
+### Jira Credentials
+
+Jira CLI Tool requires Jira credentials to authenticate with your Jira instance. You can provide these credentials through a configuration file or command-line options.
+
+#### Configuration File
+
+By default, Jira CLI Tool looks for a configuration file named `config.yml` in the `~/.jira.d/` directory. You can specify the Jira endpoint URL, email, and API token in this file using the following format:
+
+```yaml
+endpoint: <Jira-URL>
+user: <Jira-Email>
+token: <API-Token>
+```
+
+Replace `<Jira-URL>`, `<Jira-Email>`, and `<API-Token>` with your Jira instance URL, email, and API token respectively.
+
+#### Command-line Options
+
+Alternatively, you can override the configuration file values by passing command-line options. Use the following format:
+
+```
+./md2jira --url=<Jira-URL> --user=<Jira-Email> --token=<API-Token>
+```
+
+Replace `<Jira-URL>`, `<Jira-Email>`, and `<API-Token>` with your Jira instance URL, email, and API token respectively.
+
+### Additional Configuration
+
+You can also provide additional field settings for Jira issues through command-line options. Use the following format:
+
+```
+./md2jira --field="field_name=value"
+```
+
+Replace `field_name` with the name of the Jira field you want to set and `value` with the desired value.
+
+## Usage
+
+After building the project and configuring your Jira credentials, you can use the CLI tool to create Jira issues from markdown files. Here's a basic usage example:
+
+```
+./md2jira path/to/markdown-file.md
+```
+
+Replace `path/to/markdown-file.md` with the path to your markdown file.
+
+For more information on how to format your markdown file for Jira issue creation, please refer to the documentation.
+```
+
+Thank you for bringing that to my attention. Let me know if you need further adjustments!
+
 
 ## Attribution
 
